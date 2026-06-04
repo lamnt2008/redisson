@@ -18,11 +18,10 @@ package org.redisson.client.protocol.decoder;
 import org.redisson.api.array.ArrayInfo;
 import org.redisson.client.handler.State;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * Array information decoder.
@@ -34,12 +33,14 @@ public class ArrayInfoDecoder implements MultiDecoder<ArrayInfo> {
 
     @Override
     public ArrayInfo decode(List<Object> parts, State state) {
-        Map<String, Object> map = IntStream.range(0, parts.size())
-                .filter(i -> i % 2 == 0)
-                .filter(i -> i + 1 < parts.size())
-                .mapToObj(i -> parts.subList(i, i + 2))
-                .filter(p -> p.get(1) != null)
-                .collect(Collectors.toMap(e -> (String) e.get(0), e -> e.get(1)));
+        Map<String, Object> map = new HashMap<>();
+        for (int i = 0; i + 1 < parts.size(); i += 2) {
+            Object key = parts.get(i);
+            Object value = parts.get(i + 1);
+            if (key instanceof String && value != null) {
+                map.put((String) key, value);
+            }
+        }
 
         ArrayInfo info = new ArrayInfo();
         setLong(map, "count", info::setCount);
@@ -58,31 +59,45 @@ public class ArrayInfoDecoder implements MultiDecoder<ArrayInfo> {
     }
 
     private void setLong(Map<String, Object> map, String key, Consumer<Long> setter) {
-        Object value = map.get(key);
+        Long value = toLong(map.get(key));
         if (value != null) {
-            setter.accept(toLong(value));
+            setter.accept(value);
         }
     }
 
     private void setDouble(Map<String, Object> map, String key, Consumer<Double> setter) {
-        Object value = map.get(key);
+        Double value = toDouble(map.get(key));
         if (value != null) {
-            setter.accept(toDouble(value));
+            setter.accept(value);
         }
     }
 
-    private long toLong(Object value) {
+    private Long toLong(Object value) {
         if (value instanceof Number) {
             return ((Number) value).longValue();
         }
-        return Long.parseLong(value.toString());
+        if (value instanceof String) {
+            try {
+                return Long.parseLong((String) value);
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        return null;
     }
 
-    private double toDouble(Object value) {
+    private Double toDouble(Object value) {
         if (value instanceof Number) {
             return ((Number) value).doubleValue();
         }
-        return Double.parseDouble(value.toString());
+        if (value instanceof String) {
+            try {
+                return Double.parseDouble((String) value);
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        return null;
     }
 
 }

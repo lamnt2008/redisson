@@ -32,18 +32,35 @@ public class ArrayEntryDecoder implements MultiDecoder<List<ArrayEntry<Object>>>
     @Override
     public List<ArrayEntry<Object>> decode(List<Object> parts, State state) {
         List<ArrayEntry<Object>> result = new ArrayList<>(parts.size());
-        if (!parts.isEmpty() && parts.get(0) instanceof List) {
+        addEntries(result, parts);
+        return result;
+    }
+
+    private void addEntries(List<ArrayEntry<Object>> result, List<?> parts) {
+        if (parts.isEmpty()) {
+            return;
+        }
+
+        if (parts.get(0) instanceof ArrayEntry || parts.get(0) instanceof List) {
             for (Object part : parts) {
-                List<?> entry = (List<?>) part;
-                result.add(new ArrayEntry<>(toLong(entry.get(0)), entry.get(1)));
+                addEntry(result, part);
             }
-            return result;
+            return;
         }
 
         for (int i = 0; i + 1 < parts.size(); i += 2) {
             result.add(new ArrayEntry<>(toLong(parts.get(i)), parts.get(i + 1)));
         }
-        return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void addEntry(List<ArrayEntry<Object>> result, Object entry) {
+        if (entry instanceof ArrayEntry) {
+            result.add((ArrayEntry<Object>) entry);
+            return;
+        }
+
+        addEntries(result, (List<?>) entry);
     }
 
     private long toLong(Object value) {

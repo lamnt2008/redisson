@@ -54,4 +54,26 @@ public class ArrayInfoDecoderTest {
         assertThat(info.getAverageDenseSize()).isEqualTo(1.5);
     }
 
+    @Test
+    public void testDecodeSkipsNestedValues() {
+        ArrayInfo info = new ArrayInfoDecoder().decode(Arrays.asList(
+                "count", 2L,
+                "slices", Arrays.asList(Arrays.asList("type", "dense", "size", 2L)),
+                "avg-dense-size", Arrays.asList("unexpected")), null);
+
+        assertThat(info.getCount()).isEqualTo(2);
+        assertThat(info.getSlices()).isZero();
+        assertThat(info.getAverageDenseSize()).isNull();
+    }
+
+    @Test
+    public void testDecodeSkipsInvalidNumberValues() {
+        ArrayInfo info = new ArrayInfoDecoder().decode(Arrays.asList(
+                "count", "not-a-number",
+                "avg-dense-size", "unexpected"), null);
+
+        assertThat(info.getCount()).isZero();
+        assertThat(info.getAverageDenseSize()).isNull();
+    }
+
 }

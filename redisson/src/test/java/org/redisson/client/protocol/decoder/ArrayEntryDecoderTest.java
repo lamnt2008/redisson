@@ -41,4 +41,23 @@ public class ArrayEntryDecoderTest {
         assertThat(entries).containsExactly(new ArrayEntry<>(1L, "one"), new ArrayEntry<>(2L, "two"));
     }
 
+    @Test
+    public void testDecodeRecursiveEntries() {
+        ArrayEntryDecoder decoder = new ArrayEntryDecoder();
+        List<ArrayEntry<Object>> first = decoder.decode(Arrays.asList(1L, "one"), null);
+        List<ArrayEntry<Object>> second = decoder.decode(Arrays.asList(2L, "two"), null);
+
+        List<ArrayEntry<Object>> entries = decoder.decode(Arrays.asList(first, second), null);
+
+        assertThat(entries).containsExactly(new ArrayEntry<>(1L, "one"), new ArrayEntry<>(2L, "two"));
+    }
+
+    @Test
+    public void testDecodeAlreadyDecodedEntries() {
+        List<ArrayEntry<Object>> entries = new ArrayEntryDecoder()
+                .decode(Arrays.asList(new ArrayEntry<>(1L, "one"), new ArrayEntry<>(2L, "two")), null);
+
+        assertThat(entries).containsExactly(new ArrayEntry<>(1L, "one"), new ArrayEntry<>(2L, "two"));
+    }
+
 }
